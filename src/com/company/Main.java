@@ -21,36 +21,41 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 
 public class Main extends Application {
-    Label l1, l2, l3, l4, l5;
+    Label l0, l1, l2, l3, l4, l5, l6, l7;
     TextField tl, tl2;
     Button bt, bt2;
-    ArrayList<Usuario> usuarios = new ArrayList<>();
-    ArrayList<Extracto> extractosL = new ArrayList<>();
+    static ArrayList<Usuario> usuarios = new ArrayList<>();
     Image image;
     Image image2 = new Image(getClass().getResourceAsStream("image/logomenu.jpg"));
     ImageView imageView, im2, im3, im4, im5, im6;
     ImageView wP = new ImageView(image2);
     Usuario user = new Usuario();
-    VBox vb;
-    HBox hb, hb2;
+    VBox vb, vb2, vb3, vb4, vb5;
+    HBox hb, hb2, hb3, hb4;
     Double dinero, dineroE;
-    String operacion;
+
 
     public static void main(String[] args) {
+        agregarUsuarios();
         launch(args);
     }
 
+    private static void agregarUsuarios() {
+        usuarios.add(new Usuario("Sofia", 666, 666666, new ArrayList<>()));
+        usuarios.add(new Usuario("Jon", 777, 100000, new ArrayList<>()));
+        usuarios.add(new Usuario("Javi", 888, 0, new ArrayList<>()));
+    }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-
-        usuarios.add(new Usuario("Sofia", 666, 666666));
-        usuarios.add(new Usuario("Jon", 777, 100000));
-        usuarios.add(new Usuario("Javi", 888, 0));
 
         image = new Image(getClass().getResourceAsStream("image/logo.jpg"));
         imageView = new ImageView(image);
@@ -147,6 +152,12 @@ public class Main extends Application {
         im6 = new ImageView(new Image(getClass().getResourceAsStream("image/estadisticas.png")));
         im6.setFitHeight(150);
         im6.setFitWidth(150);
+        im6.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                estadisticas(stage);
+            }
+        });
 
         //Button
         bt = new Button("Log Out");
@@ -185,17 +196,103 @@ public class Main extends Application {
 
     }
 
-    private void saldo(Stage stage) {
-        wP.setFitHeight(600);
-        wP.setFitWidth(700);
+    private void estadisticas(Stage stage) {
+        wP.setFitHeight(900);
+        wP.setFitWidth(1000);
+
+
 
 
         //ESCENE
-        StackPane sp = new StackPane();
+        StackPane sp = new StackPane(wP);
         Scene scene = new Scene(sp);
-        stage.setTitle("Transferencia");
+        stage.setTitle("Estadísticas");
         stage.setScene(scene);
         stage.show();
+    }
+
+    private void saldo(Stage stage) {
+        wP.setFitHeight(1000);
+        wP.setFitWidth(900);
+        l1 = new Label("EXTRACTOS");
+        l2 = new Label("Usuario : ");
+        l3 = new Label("Saldo actual : ");
+        l5 = new Label(user.getUser());
+        l6 = new Label(Double.toString(user.getSaldo()) + "€");
+        l0 = new Label();
+        l7 = new Label();
+
+        for (Extracto e : user.getExtractos()) {
+            l0.setText(l0.getText() + "\n" + e.getClave());
+            l7.setText(l7.getText() + "\n" + e.getCantidad() + "€");
+        }
+
+        //CANCELAR
+        bt2 = new Button("Cancelar");
+        bt2.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                menuM(stage);
+            }
+        });
+
+        //IMPRIMIR
+        bt = new Button("Imprimir");
+        bt.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                imprimirTxt();
+                menuM(stage);
+            }
+        });
+
+        //ALIGNMENTS
+        vb = new VBox(l2, l3);
+        vb.setAlignment(Pos.CENTER_LEFT);
+        vb2 = new VBox(l5, l6);
+        vb2.setAlignment(Pos.CENTER_RIGHT);
+
+        hb = new HBox(vb, vb2);
+        hb.setSpacing(150);
+        hb.setPadding(new Insets(15, 15, 15, 15));
+        hb.setAlignment(Pos.CENTER);
+
+        vb3 = new VBox(l0);
+        vb3.setAlignment(Pos.CENTER_LEFT);
+        vb4 = new VBox(l7);
+        vb4.setAlignment(Pos.CENTER_RIGHT);
+
+        hb2 = new HBox(vb3, vb4);
+        hb2.setAlignment(Pos.CENTER);
+        hb2.setSpacing(150);
+        hb2.setPadding(new Insets(15, 15, 15, 15));
+
+        hb3 = new HBox(bt, bt2);
+        hb3.setAlignment(Pos.CENTER);
+        hb3.setSpacing(30);
+
+        vb5 = new VBox(l1, hb, hb2, hb3);
+        vb5.setSpacing(20);
+        vb5.setPadding(new Insets(15, 15, 15, 15));
+        vb5.setAlignment(Pos.CENTER);
+
+        //ESCENE
+        StackPane sp = new StackPane(wP, vb5);
+        Scene scene = new Scene(sp);
+        stage.setTitle("Extractos");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    private void imprimirTxt() {
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("Extractos" + user.getUser() + ".txt"));
+            oos.writeObject(user.getExtractos().toString());
+
+            oos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void transferencia(Stage stage) {
@@ -219,29 +316,34 @@ public class Main extends Application {
         bt.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                dinero = Double.parseDouble(tl.getText());
-                dineroE = user.getSaldo();
-                user.setSaldo(dineroE - dinero);
-                System.out.println("Saldo transferido: " + dinero);
-                System.out.println("Saldo actual: " + user.getSaldo());
-                operacion = "TRANSFERENCIA ENVIADA";
-                guardarExtracto(operacion, dinero);
 
-                for (Usuario u : usuarios) {
-                    if (u.getUser().equalsIgnoreCase(tl2.getText())) {
-                        dineroE = u.getSaldo();
-                        u.setSaldo(dineroE + dinero);
-                        System.out.println("Saldo recibido: " + dinero);
-                        System.out.println("Saldo actual: " + u.getSaldo());
-                        for (int i = 0; i < u.getExtractos().size(); i++) {
-                            u.getExtractos().get(i).setClave("TRANSFERENCIA RECIBIDA");
-                            u.getExtractos().get(i).setCantidad(dinero);
+                if (user.getUser().equalsIgnoreCase(tl2.getText())) {
+                    //poner formato en el tl2 para que salga rojo
+
+                } else {
+                    dinero = Double.parseDouble(tl.getText());
+                    dineroE = user.getSaldo();
+                    user.setSaldo(dineroE - dinero);
+                    System.out.println("Saldo transferido: " + dinero);
+                    System.out.println("Saldo actual: " + user.getSaldo());
+                    user.getExtractos().add(new Extracto("TRANSFERENCIA ENVIADA", dinero));
+
+                    for (Usuario u : usuarios) {
+                        if (u.getUser().equalsIgnoreCase(tl2.getText())) {
+                            System.out.println(u.getUser());
+                            dineroE = u.getSaldo();
+                            u.setSaldo(dineroE + dinero);
+                            System.out.println("Saldo recibido: " + dinero);
+                            System.out.println("Saldo actual: " + u.getSaldo());
+
+                            u.getExtractos().add(new Extracto("TRANSFERENCIA RECIBIDA", dinero));
+                            System.out.println(u.getExtractos().toString());
                         }
-                        System.out.println(u.getExtractos().toString());
                     }
-                }
 
+                }
                 menuM(stage);
+
             }
         });
 
@@ -285,12 +387,11 @@ public class Main extends Application {
             public void handle(ActionEvent event) {
                 dinero = Double.parseDouble(tl.getText());
                 dineroE = user.getSaldo();
-                operacion = "RETIRO";
                 user.setSaldo(dineroE - dinero);
                 System.out.println("Saldo retirado: " + dinero);
                 System.out.println("Saldo actual: " + user.getSaldo());
 
-                guardarExtracto(operacion, dinero);
+                user.getExtractos().add(new Extracto("RETIRO", dinero));
                 menuM(stage);
             }
         });
@@ -321,13 +422,13 @@ public class Main extends Application {
 
     }
 
-    private void guardarExtracto(String operacion, Double dinero) {
+   /* private void guardarExtracto(String operacion, Double dinero) {
         extractosL.add(new Extracto(operacion, dinero));
         user.setExtractos(extractosL);
         for (Extracto e : user.getExtractos()) {
             System.out.println(e.toString());
         }
-    }
+    } */
 
     private void ingresar(Stage stage) {
         wP.setFitHeight(500);
@@ -348,8 +449,7 @@ public class Main extends Application {
                 user.setSaldo(dineroE + dinero);
                 System.out.println("Saldo ingresado: " + dinero);
                 System.out.println("Saldo actual: " + user.getSaldo());
-               operacion = "INGRESO";
-               guardarExtracto(operacion,dinero);
+                user.getExtractos().add(new Extracto("INGRESO", dinero));
                 menuM(stage);
             }
         });

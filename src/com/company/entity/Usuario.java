@@ -10,10 +10,11 @@ public class Usuario {
     double saldo;
     ArrayList<Extracto> extractos;
 
-    public Usuario(String user, int pass, double saldo) {
+    public Usuario(String user, Integer pass, double saldo, ArrayList<Extracto> extractos) {
         this.user = user;
         this.pass = pass;
         this.saldo = saldo;
+        this.extractos = extractos;
     }
 
     public Usuario() {
@@ -49,5 +50,15 @@ public class Usuario {
 
     public void setExtractos(ArrayList<Extracto> extractos) {
         this.extractos = extractos;
+    }
+
+    @Override
+    public String toString() {
+        return "Usuario{" +
+                "user='" + user + '\'' +
+                ", pass=" + pass +
+                ", saldo=" + saldo +
+                ", extractos=" + extractos +
+                '}';
     }
 }
