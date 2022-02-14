@@ -1,6 +1,8 @@
 package com.company;
 import com.company.entity.Extracto;
 import com.company.entity.Usuario;
+import com.company.server.PaqueteDatos;
+import com.company.server.Server;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -26,11 +28,16 @@ import javafx.scene.layout.*;
 
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,12 +50,12 @@ public class Main extends Application {
     static ArrayList<Usuario> usuarios = new ArrayList<>();
     Image image;
     Image image2 = new Image(getClass().getResourceAsStream("image/logomenu.jpg"));
-    ImageView imageView, im2, im3, im4, im5, im6;
+    ImageView imageView, im2, im3, im4, im5, im6, im7;
     ImageView wP = new ImageView(image2);
     Usuario user = new Usuario();
     VBox vb, vb2, vb3, vb4, vb5;
     HBox hb, hb2, hb3, hb4;
-    Double dinero, dineroE, saldoMax;
+    Double dinero, dineroE, saldoMax, dineroHistorico;
 
     public static void main(String[] args) {
         agregarUsuarios();
@@ -181,6 +188,17 @@ public class Main extends Application {
             }
         });
 
+        //SEGURIDAD
+        im7 = new ImageView(new Image(getClass().getResourceAsStream("image/estadisticas.png")));
+        im7.setFitHeight(150);
+        im7.setFitWidth(150);
+        im7.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                seguridad(stage);
+            }
+        });
+
         //Button
         bt = new Button("Log Out");
         bt.setAlignment(Pos.BOTTOM_CENTER);
@@ -200,7 +218,7 @@ public class Main extends Application {
         HBox hb = new HBox(im2, im3, im4);
         hb.setSpacing(100);
         hb.setAlignment(Pos.CENTER);
-        HBox hb2 = new HBox(im5, im6);
+        HBox hb2 = new HBox(im5, im6, im7);
         hb2.setSpacing(100);
         hb2.setAlignment(Pos.CENTER);
 
@@ -242,7 +260,6 @@ public class Main extends Application {
         tarta.setData(getChartData());
         tarta.setLegendSide(Side.LEFT);
         tarta.setTitle("Porcentual");
-
         tarta.setClockwise(false);
 
         //VERTICAL
@@ -250,26 +267,7 @@ public class Main extends Application {
         vb.setAlignment(Pos.CENTER);
         vb.setSpacing(50);
 
-        /*
-        //AREA CHART
-        NumberAxis xaxis = new NumberAxis(0, user.getExtractos().size(), 1);
-        NumberAxis yaxis = new NumberAxis(0, user.getSaldo(), 10);
-        xaxis.setLabel("Operaciones");
-        yaxis.setLabel("Saldo en €");
-
-        AreaChart<Number, Number> area = new AreaChart<>(xaxis, yaxis);
-        area.setTitle("Saldo Historico");
-
-        XYChart.Series serie = new XYChart.Series();
-        serie.setName("Serie");
-
-        for (Extracto e : user.getExtractos()) {
-            serie.getData().add(new XYChart.Data(user.getSaldo() - e.getCantidad(), user.getSaldo()));
-
-        }
-        area.getData().add(serie);
-        */
-        //AREA CHART
+        //LINE CHART
         NumberAxis xaxis = new NumberAxis(0, user.getExtractos().size(), 1);
         NumberAxis yaxis = new NumberAxis(0, saldoMax, 50);
         xaxis.setLabel("Nº Operaciones");
@@ -280,23 +278,13 @@ public class Main extends Application {
         XYChart.Series serie = new XYChart.Series();
         serie.setName("Serie");
 
-        double ingresos = 0;
-        double retiros = 0;
-        double transferencias = 0;
+        int contador = 0;
+        serie.getData().add(new XYChart.Data(contador, user.getSaldo()));
         for (Extracto e : user.getExtractos()) {
-
-            if (e.getClave().equalsIgnoreCase("ingreso")) {
-                ingresos = ingresos + e.getCantidad();
-                serie.getData().add(new XYChart.Data(user.getSaldo() - ingresos, user.getSaldo()));
-            } else if (e.getClave().equalsIgnoreCase("retiro")) {
-                retiros = retiros + e.getCantidad();
-                serie.getData().add(new XYChart.Data(user.getSaldo() - retiros, user.getSaldo()));
-            } else {
-                transferencias = transferencias + e.getCantidad();
-                serie.getData().add(new XYChart.Data(user.getSaldo() - transferencias, user.getSaldo()));
-            }
+            contador++;
+            serie.getData().add(new XYChart.Data(contador, e.getDineroHistorico()));
         }
-        linea.getData().addAll(serie);
+        linea.getData().add(serie);
 
         vb2 = new VBox(linea);
         vb2.setAlignment(Pos.CENTER_RIGHT);
@@ -307,11 +295,12 @@ public class Main extends Application {
         hb.setAlignment(Pos.CENTER);
         hb.setSpacing(100);
 
-        vb2 = new VBox(bt2);
-        vb2.setAlignment(Pos.CENTER);
-        vb2.setSpacing(50);
+        vb5 = new VBox(bt2);
+        vb5.setAlignment(Pos.CENTER);
+        vb5.setSpacing(50);
+        vb5.setPadding(new Insets(15, 15, 25, 15));
 
-        bp.setBottom(vb2);
+        bp.setBottom(vb5);
         bp.setTop(vb);
         l1.setAlignment(Pos.CENTER);
         bp.setCenter(hb);
@@ -355,8 +344,8 @@ public class Main extends Application {
         l7 = new Label();
 
         for (Extracto e : user.getExtractos()) {
-            l0.setText(l0.getText() + "\n" + e.getClave());
-            l7.setText(l7.getText() + "\n" + e.getCantidad() + "€");
+            l0.setText(l0.getText() + "\n" + e.getClave() + "\n");
+            l7.setText(l7.getText() + "\n" + e.getCantidad() + "€" + "\n" + e.getDineroHistorico() + "€");
         }
 
         //CANCELAR
@@ -486,7 +475,8 @@ public class Main extends Application {
                         user.setSaldo(dineroE - dinero);
                         System.out.println("Saldo transferido: " + dinero);
                         System.out.println("Saldo actual: " + user.getSaldo());
-                        user.getExtractos().add(new Extracto("TRANSFERENCIA ENVIADA", dinero));
+                        dineroHistorico = user.getSaldo();
+                        user.getExtractos().add(new Extracto("TRANSFERENCIA ENVIADA", dinero, dineroHistorico));
 
                         for (Usuario u : usuarios) {
                             if (u.getUser().equalsIgnoreCase(tlaux.getText())) {
@@ -495,8 +485,8 @@ public class Main extends Application {
                                 u.setSaldo(dineroE + dinero);
                                 System.out.println("Saldo recibido: " + dinero);
                                 System.out.println("Saldo actual: " + u.getSaldo());
-
-                                u.getExtractos().add(new Extracto("TRANSFERENCIA RECIBIDA", dinero));
+                                dineroHistorico = user.getSaldo();
+                                u.getExtractos().add(new Extracto("TRANSFERENCIA RECIBIDA", dinero, dineroHistorico));
                                 System.out.println(u.getExtractos().toString());
                             }
                         }
@@ -566,8 +556,8 @@ public class Main extends Application {
                     user.setSaldo(dineroE - dinero);
                     System.out.println("Saldo retirado: " + dinero);
                     System.out.println("Saldo actual: " + user.getSaldo());
-
-                    user.getExtractos().add(new Extracto("RETIRO", dinero));
+                    dineroHistorico = user.getSaldo();
+                    user.getExtractos().add(new Extracto("RETIRO", dinero, dineroHistorico));
                     menuM(stage);
                 }
 
@@ -632,7 +622,8 @@ public class Main extends Application {
                 user.setSaldo(dineroE + dinero);
                 System.out.println("Saldo ingresado: " + dinero);
                 System.out.println("Saldo actual: " + user.getSaldo());
-                user.getExtractos().add(new Extracto("INGRESO", dinero));
+                dineroHistorico = user.getSaldo();
+                user.getExtractos().add(new Extracto("INGRESO", dinero, dineroHistorico));
                 menuM(stage);
 
             }
@@ -661,6 +652,26 @@ public class Main extends Application {
         stage.setScene(scene);
         stage.show();
 
+    }
+
+    private void seguridad(Stage stage){
+        Server server = new Server();
+
+        try {
+            Socket miConexion = new Socket("localhost", 8080);
+            //crear objeto instancia almacenador de datos recogidos
+            Usuario datos = user;
+            //enviar objeto a traves de ObjectOutputStream
+            ObjectOutputStream envioDatos = new ObjectOutputStream(miConexion.getOutputStream());
+            envioDatos.writeObject(datos);
+
+            //hay que serializar la clase para tranformar datos a bytes (implementar la serializacion)
+
+        } catch (UnknownHostException e1) {
+            e1.printStackTrace();
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
     }
 
     private void formatFontBold(Label label) {
