@@ -1,10 +1,9 @@
 package com.company.entity;
-
-
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class Usuario {
+public class Usuario implements Serializable {
     String user;
     Integer pass;
     double saldo;
