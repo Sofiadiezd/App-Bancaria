@@ -1,4 +1,5 @@
 package com.company;
+
 import com.company.entity.Extracto;
 import com.company.entity.Usuario;
 import com.company.server.PaqueteDatos;
@@ -56,6 +57,7 @@ public class Main extends Application {
     VBox vb, vb2, vb3, vb4, vb5;
     HBox hb, hb2, hb3, hb4;
     Double dinero, dineroE, saldoMax, dineroHistorico;
+    Boolean serverON = false;
 
     public static void main(String[] args) {
         agregarUsuarios();
@@ -69,7 +71,10 @@ public class Main extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) {
+        if (serverON == false) {
+            servidor();
+        }
         image = new Image(getClass().getResourceAsStream("image/logo.jpg"));
         imageView = new ImageView(image);
         imageView.setFitHeight(800);
@@ -127,6 +132,16 @@ public class Main extends Application {
             }
         });
 
+    }
+
+    private void servidor() {
+        Stage stage1 = new Stage();
+        Server server = new Server();
+        try {
+            server.start(stage1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void menuM(Stage stage) {
@@ -195,7 +210,7 @@ public class Main extends Application {
         im7.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                seguridad(stage);
+                seguridad();
             }
         });
 
@@ -654,23 +669,21 @@ public class Main extends Application {
 
     }
 
-    private void seguridad(Stage stage){
-        Server server = new Server();
+    private void seguridad() {
 
         try {
             Socket miConexion = new Socket("localhost", 8080);
             //crear objeto instancia almacenador de datos recogidos
-            Usuario datos = user;
+            PaqueteDatos paqueteDatos = new PaqueteDatos();
+            paqueteDatos.setUser(user);
+            paqueteDatos.setServerON(serverON);
             //enviar objeto a traves de ObjectOutputStream
             ObjectOutputStream envioDatos = new ObjectOutputStream(miConexion.getOutputStream());
-            envioDatos.writeObject(datos);
 
-            //hay que serializar la clase para tranformar datos a bytes (implementar la serializacion)
+            envioDatos.writeObject(paqueteDatos);
 
-        } catch (UnknownHostException e1) {
-            e1.printStackTrace();
-        } catch (IOException e1) {
-            e1.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -686,5 +699,6 @@ public class Main extends Application {
         label.setPadding(new Insets(15, 0, 0, 15));
         label.setStyle("-fx-font-weight:bold");
     }
+
 
 }

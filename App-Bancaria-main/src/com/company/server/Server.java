@@ -1,12 +1,17 @@
 package com.company.server;
+
 import com.company.aes.AES;
 import com.company.entity.Extracto;
 import com.company.entity.Usuario;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import javafx.application.Application;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
@@ -16,10 +21,7 @@ import javafx.stage.Stage;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.ServerSocket;
@@ -28,79 +30,17 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
-public class Server extends Application implements Runnable{
+public class Server extends Application implements Runnable {
     TextArea ta;
-    JScrollPane scroll;
     Button bt, bt2;
-    Usuario reciboDatos = new Usuario();
-    Image image;
+    PaqueteDatos reciboDatos = new PaqueteDatos();
+    Image image = new Image(getClass().getResourceAsStream("..//image/logomenu.jpg"));
     ImageView wP = new ImageView(image);
+    TextField tf = new TextField();
     Label l, l0, l1, l2, l3, l4, l5, l6, l7;
 
     @Override
-    public void run() {
-        try {
-            ServerSocket server = new ServerSocket(8080);
-            //modificar datos para recepcion de paquete
-            Usuario reciboDatos;
-
-            while (true) {
-                Socket miConexion = server.accept();
-                ObjectInputStream reciboDatosPak = new ObjectInputStream(miConexion.getInputStream());
-                reciboDatos = (Usuario) reciboDatosPak.readObject();
-
-                //parte de encriptacion
-                final String claveEncriptacion = "ExamenPSP2Eval";
-                AES encriptador = new AES();
-                String encriptado = null, desencriptado = null;
-                try {
-                    encriptado = encriptador.encriptar(String.valueOf(reciboDatos.getPass()), claveEncriptacion);
-                    desencriptado = encriptador.desencriptar(encriptado, claveEncriptacion);
-                } catch (InvalidKeyException e) {
-                    e.printStackTrace();
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                } catch (NoSuchPaddingException e) {
-                    e.printStackTrace();
-                } catch (IllegalBlockSizeException e) {
-                    e.printStackTrace();
-                } catch (BadPaddingException e) {
-                    e.printStackTrace();
-                }
-                ArrayList<Extracto> extList = new ArrayList<Extracto>();
-                ta.append("\nUsuario: " + reciboDatos.getUser()+ "\nContraseña encriptada: " + encriptado + "\nContraseña desencriptada: " + desencriptado);
-                ta.append("\nEXTRACTOS: \n");
-                for(Extracto e : reciboDatos.getExtractos()){
-                    if(e == null){
-                        ta.append("No hay extractos\n");
-                        break;
-                    }else {
-                        extList.add(e);
-                        ta.append(e.toString() + "\n");
-                    }
-                }
-                miConexion.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
     public void start(Stage primaryStage) throws Exception {
-        l = new Label("Mensaje");
-        ta = new TextArea();
-        ta.setBounds(50, 50, 200, 200);
-        image = new Image(getClass().getResourceAsStream("image/logomenu.jpg"));
-        ta.setEditable(false);
-        scroll = new JScrollPane(ta);
-        scroll.setBounds(50, 50, 200, 200);
-        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
-        Thread hiloServidor = new Thread(this);
-        hiloServidor.start();
 
         //EXTRACTOS SERVIDOR
         wP.setFitHeight(1000);
@@ -108,33 +48,95 @@ public class Server extends Application implements Runnable{
         l1 = new Label("EXTRACTOS");
         l2 = new Label("Usuario : ");
         l3 = new Label("Saldo actual : ");
-        l5 = new Label(reciboDatos.getUser());
-        l6 = new Label(Double.toString(reciboDatos.getSaldo()) + "€");
+        l5 = new Label();
+        l6 = new Label();
         l0 = new Label();
         l7 = new Label();
 
-        for (Extracto e : reciboDatos.getExtractos()) {
+        ta = new TextArea("");
+        ta.setEditable(false);
+
+     /*   for (Extracto e : reciboDatos.getExtractos()) {
             l0.setText(l0.getText() + "\n" + e.getClave() + "\n");
             l7.setText(l7.getText() + "\n" + e.getCantidad() + "€" + "\n" + e.getDineroHistorico() + "€");
-        }
+        } */
 
         //CANCELAR
         bt2 = new Button("Cancelar");
-        bt2.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
+        bt2.setOnAction(new EventHandler<ActionEvent>() {
             @Override
-            public void handle(javafx.event.ActionEvent event) {
-                System.exit(0);
+            public void handle(ActionEvent event) {
+                primaryStage.close();
+
             }
         });
-        VBox vb = new VBox(l1, l2, l3, l0, l5, l6, l7);
+
+        Thread hiloServidor = new Thread(this);
+        hiloServidor.start();
+
+        VBox vb = new VBox(l1, l2, l3, tf, l6, ta, bt2);
         StackPane sp = new StackPane(wP, vb);
         Scene scene = new Scene(sp);
         primaryStage.setTitle("Servidor");
-        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("image/icon.jpg")));
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("..//image/icon.jpg")));
         primaryStage.setScene(scene);
         primaryStage.show();
     }
+
+    @Override
+    public void run() {
+        try {
+            ServerSocket server = new ServerSocket(8080);
+            while (true) {
+                //modificar datos para recepcion de paquete
+                Socket miConexion = server.accept();
+                ObjectInputStream reciboDatosPak = new ObjectInputStream(miConexion.getInputStream());
+
+                reciboDatos = (PaqueteDatos) reciboDatosPak.readObject();
+
+                tf.setText(reciboDatos.getUser().getUser());
+
+                //parte de encriptacion
+                final String claveEncriptacion = "ExamenPSP2Eval";
+                AES encriptador = new AES();
+                String encriptado = null, desencriptado = null;
+
+                encriptado = encriptador.encriptar(String.valueOf(reciboDatos.getUser().getPass()), claveEncriptacion);
+                desencriptado = encriptador.desencriptar(encriptado, claveEncriptacion);
+
+                ArrayList<Extracto> extList = new ArrayList<Extracto>();
+
+                ta.setText(ta.getText() + "\nUsuario: " + reciboDatos.getUser().getUser() + "\nContraseña encriptada: " + encriptado + "\nContraseña desencriptada: " + desencriptado);
+                ta.setText(ta.getText() + "\nEXTRACTOS: \n");
+                for (Extracto e : reciboDatos.getUser().getExtractos()) {
+                    if (e == null) {
+                        ta.setText("No hay extractos\n");
+                    } else {
+                        extList.add(e);
+                        ta.setText(ta.getText() + "\n" + e + "\n");
+                    }
+                }
+                miConexion.close();
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        }
+    }
 }
+
 
 
 

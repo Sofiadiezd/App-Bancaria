@@ -1,30 +1,26 @@
 package com.company.server;
+
+import com.company.entity.Usuario;
+
 import java.io.Serializable;
 
-    public class PaqueteDatos implements Serializable {
-        String nombre, ip, mensaje;
+public class PaqueteDatos implements Serializable {
+    Usuario user;
+    Boolean serverON;
 
-        public String getNombre() {
-            return nombre;
-        }
-
-        public void setNombre(String nombre) {
-            this.nombre = nombre;
-        }
-
-        public String getIp() {
-            return ip;
-        }
-
-        public void setIp(String ip) {
-            this.ip = ip;
-        }
-
-        public String getMensaje() {
-            return mensaje;
-        }
-
-        public void setMensaje(String mensaje) {
-            this.mensaje = mensaje;
-        }
+    public Usuario getUser() {
+        return user;
     }
+
+    public void setUser(Usuario user) {
+        this.user = user;
+    }
+
+    public Boolean getServerON() {
+        return serverON;
+    }
+
+    public void setServerON(Boolean serverON) {
+        this.serverON = serverON;
+    }
+}
