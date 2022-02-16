@@ -2,7 +2,6 @@ package com.company;
 
 import com.company.entity.Extracto;
 import com.company.entity.Usuario;
-import com.company.server.PaqueteDatos;
 import com.company.server.Server;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
@@ -29,18 +28,14 @@ import javafx.scene.layout.*;
 
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 public class Main extends Application {
     final double MAX_FONT_SIZE_BIG = 40.0;
@@ -58,6 +53,7 @@ public class Main extends Application {
     HBox hb, hb2, hb3, hb4;
     Double dinero, dineroE, saldoMax, dineroHistorico;
     Boolean serverON = false;
+    Date date;
 
     public static void main(String[] args) {
         agregarUsuarios();
@@ -135,6 +131,7 @@ public class Main extends Application {
     }
 
     private void servidor() {
+        serverON = true;
         Stage stage1 = new Stage();
         Server server = new Server();
         try {
@@ -481,6 +478,7 @@ public class Main extends Application {
                 } else {
                     dinero = Double.parseDouble(tl.getText());
                     dineroE = user.getSaldo();
+                    date = new Date();
 
                     if (dinero > dineroE) {
                         tl.setStyle("-fx-border-color: red ; -fx-border-width: 2px ; -fx-border-radius: 15;");
@@ -491,18 +489,19 @@ public class Main extends Application {
                         System.out.println("Saldo transferido: " + dinero);
                         System.out.println("Saldo actual: " + user.getSaldo());
                         dineroHistorico = user.getSaldo();
-                        user.getExtractos().add(new Extracto("TRANSFERENCIA ENVIADA", dinero, dineroHistorico));
+                        user.getExtractos().add(new Extracto("TRANSFERENCIA ENVIADA", dinero, dineroHistorico, date));
 
                         for (Usuario u : usuarios) {
-                            if (u.getUser().equalsIgnoreCase(tlaux.getText())) {
+                            if (u.getUser().equalsIgnoreCase(tl2.getText())) {
                                 System.out.println(u.getUser());
                                 dineroE = u.getSaldo();
                                 u.setSaldo(dineroE + dinero);
                                 System.out.println("Saldo recibido: " + dinero);
                                 System.out.println("Saldo actual: " + u.getSaldo());
                                 dineroHistorico = user.getSaldo();
-                                u.getExtractos().add(new Extracto("TRANSFERENCIA RECIBIDA", dinero, dineroHistorico));
+                                u.getExtractos().add(new Extracto("TRANSFERENCIA RECIBIDA", dinero, dineroHistorico, date));
                                 System.out.println(u.getExtractos().toString());
+                                seguridad();
                             }
                         }
                         menuM(stage);
@@ -563,6 +562,7 @@ public class Main extends Application {
             public void handle(ActionEvent event) {
                 dinero = Double.parseDouble(tl.getText());
                 dineroE = user.getSaldo();
+                date = new Date();
 
                 if (dinero > dineroE) {
                     tl.setStyle("-fx-border-color: red ; -fx-border-width: 2px ; -fx-border-radius: 15;");
@@ -572,7 +572,8 @@ public class Main extends Application {
                     System.out.println("Saldo retirado: " + dinero);
                     System.out.println("Saldo actual: " + user.getSaldo());
                     dineroHistorico = user.getSaldo();
-                    user.getExtractos().add(new Extracto("RETIRO", dinero, dineroHistorico));
+                    user.getExtractos().add(new Extracto("RETIRO", dinero, dineroHistorico, date));
+                    seguridad();
                     menuM(stage);
                 }
 
@@ -633,13 +634,17 @@ public class Main extends Application {
             public void handle(ActionEvent event) {
                 dinero = Double.parseDouble(tl.getText());
                 dineroE = user.getSaldo();
+                date = new Date();
 
                 user.setSaldo(dineroE + dinero);
                 System.out.println("Saldo ingresado: " + dinero);
                 System.out.println("Saldo actual: " + user.getSaldo());
                 dineroHistorico = user.getSaldo();
-                user.getExtractos().add(new Extracto("INGRESO", dinero, dineroHistorico));
+                user.getExtractos().add(new Extracto("INGRESO", dinero, dineroHistorico, date));
+
+                seguridad();
                 menuM(stage);
+
 
             }
         });
@@ -674,14 +679,13 @@ public class Main extends Application {
         try {
             Socket miConexion = new Socket("localhost", 8080);
             //crear objeto instancia almacenador de datos recogidos
-            PaqueteDatos paqueteDatos = new PaqueteDatos();
-            paqueteDatos.setUser(user);
-            paqueteDatos.setServerON(serverON);
+
             //enviar objeto a traves de ObjectOutputStream
             ObjectOutputStream envioDatos = new ObjectOutputStream(miConexion.getOutputStream());
 
-            envioDatos.writeObject(paqueteDatos);
+            envioDatos.writeObject(user);
 
+            miConexion.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

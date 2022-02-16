@@ -3,17 +3,18 @@ package com.company.server;
 import com.company.aes.AES;
 import com.company.entity.Extracto;
 import com.company.entity.Usuario;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
+
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -28,54 +29,56 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 
 public class Server extends Application implements Runnable {
     TextArea ta;
-    Button bt, bt2;
-    PaqueteDatos reciboDatos = new PaqueteDatos();
+    Usuario reciboDatos = new Usuario();
     Image image = new Image(getClass().getResourceAsStream("..//image/logomenu.jpg"));
     ImageView wP = new ImageView(image);
-    TextField tf = new TextField();
-    Label l, l0, l1, l2, l3, l4, l5, l6, l7;
+    TextField tf, tf2;
+    Label l1, l2, l3;
+    VBox vb, vb2, vb3;
+    HBox hb;
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) {
 
-        //EXTRACTOS SERVIDOR
-        wP.setFitHeight(1000);
-        wP.setFitWidth(900);
-        l1 = new Label("EXTRACTOS");
+        wP.setFitHeight(600);
+        wP.setFitWidth(600);
+        l1 = new Label("INFORMACIÓN DE CLIENTE");
         l2 = new Label("Usuario : ");
-        l3 = new Label("Saldo actual : ");
-        l5 = new Label();
-        l6 = new Label();
-        l0 = new Label();
-        l7 = new Label();
+        l3 = new Label("Contraseña : ");
+
+        tf = new TextField("");
+        tf.setEditable(false);
+        tf2 = new TextField("");
+        tf2.setEditable(false);
 
         ta = new TextArea("");
+        ta.setMaxHeight(300);
+        ta.setMaxWidth(350);
         ta.setEditable(false);
-
-     /*   for (Extracto e : reciboDatos.getExtractos()) {
-            l0.setText(l0.getText() + "\n" + e.getClave() + "\n");
-            l7.setText(l7.getText() + "\n" + e.getCantidad() + "€" + "\n" + e.getDineroHistorico() + "€");
-        } */
-
-        //CANCELAR
-        bt2 = new Button("Cancelar");
-        bt2.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                primaryStage.close();
-
-            }
-        });
 
         Thread hiloServidor = new Thread(this);
         hiloServidor.start();
 
-        VBox vb = new VBox(l1, l2, l3, tf, l6, ta, bt2);
-        StackPane sp = new StackPane(wP, vb);
+        vb = new VBox(l2, l3);
+        vb.setAlignment(Pos.CENTER_LEFT);
+        vb.setSpacing(5);
+        vb2 = new VBox(tf, tf2);
+        vb2.setSpacing(5);
+        vb2.setAlignment(Pos.CENTER_RIGHT);
+
+        hb = new HBox(vb, vb2);
+        hb.setSpacing(100);
+        hb.setPadding(new Insets(15, 15, 15, 15));
+        hb.setAlignment(Pos.CENTER);
+
+        vb3 = new VBox(l1, hb, ta);
+        vb3.setSpacing(50);
+        vb3.setAlignment(Pos.CENTER);
+
+        StackPane sp = new StackPane(wP, vb3);
         Scene scene = new Scene(sp);
         primaryStage.setTitle("Servidor");
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("..//image/icon.jpg")));
@@ -88,36 +91,33 @@ public class Server extends Application implements Runnable {
         try {
             ServerSocket server = new ServerSocket(8080);
             while (true) {
-                //modificar datos para recepcion de paquete
+
                 Socket miConexion = server.accept();
                 ObjectInputStream reciboDatosPak = new ObjectInputStream(miConexion.getInputStream());
 
-                reciboDatos = (PaqueteDatos) reciboDatosPak.readObject();
-
-                tf.setText(reciboDatos.getUser().getUser());
+                reciboDatos = (Usuario) reciboDatosPak.readObject();
 
                 //parte de encriptacion
                 final String claveEncriptacion = "ExamenPSP2Eval";
                 AES encriptador = new AES();
                 String encriptado = null, desencriptado = null;
-
-                encriptado = encriptador.encriptar(String.valueOf(reciboDatos.getUser().getPass()), claveEncriptacion);
+                encriptado = encriptador.encriptar(String.valueOf(reciboDatos.getPass()), claveEncriptacion);
                 desencriptado = encriptador.desencriptar(encriptado, claveEncriptacion);
 
-                ArrayList<Extracto> extList = new ArrayList<Extracto>();
+                ta.setText("");
+                tf.setText(reciboDatos.getUser());
+                tf2.setText(encriptado);
 
-                ta.setText(ta.getText() + "\nUsuario: " + reciboDatos.getUser().getUser() + "\nContraseña encriptada: " + encriptado + "\nContraseña desencriptada: " + desencriptado);
+                ta.setText("Información Personal: \nContraseña: " + desencriptado + "\nSaldo Actual: " + reciboDatos.getSaldo());
                 ta.setText(ta.getText() + "\nEXTRACTOS: \n");
-                for (Extracto e : reciboDatos.getUser().getExtractos()) {
+                for (Extracto e : reciboDatos.getExtractos()) {
                     if (e == null) {
                         ta.setText("No hay extractos\n");
                     } else {
-                        extList.add(e);
                         ta.setText(ta.getText() + "\n" + e + "\n");
                     }
                 }
                 miConexion.close();
-
             }
         } catch (IOException e) {
             e.printStackTrace();

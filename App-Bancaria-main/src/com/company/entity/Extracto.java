@@ -1,16 +1,20 @@
 package com.company.entity;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Extracto implements Serializable {
     String clave;
     double cantidad;
     double dineroHistorico;
+    Date dateExtracto;
 
-    public Extracto(String clave, double cantidad, double dineroHistorico) {
+    public Extracto(String clave, double cantidad, double dineroHistorico, Date dateExtracto) {
         this.clave = clave;
         this.cantidad = cantidad;
         this.dineroHistorico = dineroHistorico;
+        this.dateExtracto = dateExtracto;
     }
 
     public String getClave() {
@@ -37,8 +41,18 @@ public class Extracto implements Serializable {
         this.dineroHistorico = dineroHistorico;
     }
 
+    public Date getDateExtracto() {
+        return dateExtracto;
+    }
+
+    public void setDateExtracto(Date dateExtracto) {
+        this.dateExtracto = dateExtracto;
+    }
+
     @Override
     public String toString() {
-        return "Extracto: " + "\nOperacion = " + clave + "\nCantidad = " + cantidad + "€" + "\nCuenta: " + dineroHistorico + "€";
+        SimpleDateFormat f = new SimpleDateFormat("HH : mm : ss");
+        String tiempo = f.format(dateExtracto);
+        return "Extracto: \nOperacion = " + clave + "\nCantidad = " + cantidad + "€\nCuenta = " + dineroHistorico + "€\nHora = " + tiempo;
     }
 }
